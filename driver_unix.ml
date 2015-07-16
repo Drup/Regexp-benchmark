@@ -4,7 +4,7 @@ let get_int i = int_of_string (Sys.argv.(i))
 let runs  = get_int 1
 let comps = get_int 2
 let execs = get_int 3
-let prep  = try get_int 4 with _ -> 0
+let prep  = if Array.length Sys.argv > 4 then get_int 4 else 0
 
 let prepend_0s i s = String.make i '0' ^ s
 
@@ -62,8 +62,9 @@ let run_n f n =
   aux 0
 
 
+type t = R : ((unit -> 'a) * ('a -> string list -> 'b)) -> t
 
-let r () =
+let run (R (prepare, exec)) =
 
   Gc.compact ();
 
@@ -71,77 +72,29 @@ let r () =
     (time (fun () ->
       run_n
         (fun () ->
-          let r = Str_regexp_bench.re () in
-          run_n (fun () -> Str_regexp_bench.f r urls) execs
+          let r = prepare () in
+          run_n (fun () -> exec r urls) execs
         )
         comps
     ))
   in
   Printf.printf "%f %!" t;
-  Printf.eprintf ".%!";
-
-  Gc.compact ();
-
-  let t =
-    (time (fun () ->
-      run_n
-        (fun () ->
-          let r = Re_regexp_bench.re () in
-          run_n (fun () -> Re_regexp_bench.f r urls) execs
-        )
-        comps
-    ))
-  in
-  Printf.printf "%f %!" t;
-  Printf.eprintf ".%!";
-
-  Gc.compact ();
-
-  let t =
-    (time (fun () ->
-      run_n
-        (fun () ->
-          let r = Re_string_regexp_bench.re () in
-          run_n (fun () -> Re_string_regexp_bench.f r urls) execs
-        )
-        comps
-    ))
-  in
-  Printf.printf "%f %!" t;
-  Printf.eprintf ".%!";
-
-  Gc.compact ();
-
-  let t =
-    (time (fun () ->
-      run_n
-        (fun () ->
-          let r = Pcre_regexp_bench.re () in
-          run_n (fun () -> Pcre_regexp_bench.f r urls) execs
-        )
-        comps
-    ))
-  in
-  Printf.printf "%f %!" t;
-  Printf.eprintf ".%!";
-
-  Gc.compact ();
-
-  let t =
-    (time (fun () ->
-      run_n
-        (fun () ->
-          let r = Pcre_nogroup_regexp_bench.re () in
-          run_n (fun () -> Pcre_nogroup_regexp_bench.f r urls) execs
-        )
-        comps
-    ))
-  in
-  Printf.printf "%f\n%!" t;
   Printf.eprintf ".%!";
   ()
 
 
+let r () =
+  List.iter run [
+     R Str_regexp_bench.(re, f) ;
+     R Re_regexp_bench.(re, f) ;
+     R Re_string_regexp_bench.(re, f) ;
+     R Pcre_regexp_bench.(re, f) ;
+     R Pcre_nogroup_regexp_bench.(re, f) ;
+     R Re_bench.(re, f) ;
+     R Re_str_bench.(re, f) ;
+  ];
+  print_newline ()
+
+
 
 let () = run_n r runs
-

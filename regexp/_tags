@@ -1,2 +1,2 @@
 true: mirage
-<*.cmx>: for-pack(Regexp)
+not <regexp.*>: for-pack(Regexp)
